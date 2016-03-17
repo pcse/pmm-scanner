@@ -3,7 +3,7 @@
 **/
 
 var routes = {
-	'/':'/static/index.html'
+	'/':'/index.html'
 };
 
 module.exports = routes;

@@ -226,11 +226,10 @@ var database = {
 		// update statistical counter
 		database.statistics.registeredCount++;
 
-		// make sure callback is of type function
-		callback = (callback && typeof callback == 'function') || function() {};
-
 		// call callback function to continue
-		callback.call(this, entry); 
+		if(typeof callback == 'function') {
+			callback.call(this, entry); 
+		}
 	},
 
 	/**
