@@ -228,10 +228,9 @@ var output = {
 					ID: db.get(i).id,
 					FIRST: db.get(i).fname,
 					LAST: db.get(i).lname,
-					FIRST: db.get(i).email,
-					YEAR: db.get(i).year,
 					MAJOR: db.get(i).major,
 					EMAIL: db.get(i).email,
+					YEAR: db.get(i).year,
 					AT_EVENT: (db.get(i).registered ? '1' : ' '),
 					IS_NEW: (db.get(i).isNew ? '1' : ' ')
 				
