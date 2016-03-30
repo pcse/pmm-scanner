@@ -4,23 +4,23 @@
 # inside of the application's folder
 
 PLATFORM=`uname`;
-PATH_TO_EXEC="js";
 APP_UI_ADDRESS="http://localhost:8000";
 
 cd `dirname $0`
 
-if [[ -d './js' ]]
+if [[ ! -d './js' ]]
 then
-	cd './js';
+	echo "Fatal: Could not find directory 'js'";
+	exit 1;
 fi
+
+cd 'js';
 
 if [[ $PLATFORM == 'Darwin' ]]
 then
-	ROOT_PATH='/Users/juanvallejo/Documents/pcse-scanner/';
 	sh -c "bash -c \"open -a 'Google Chrome' 'http://localhost:8000'\"";
-	sh -c "bash -c \"node $ROOT_PATH$PATH_TO_EXEC\""
+	sh -c "bash -c \"node .\""
 else
-	ROOT_PATH='/home/pcse/Documents/pcse-scanner/';
 	gnome-terminal -e "bash -c \"google-chrome http://localhost:8000\"";
-	gnome-terminal -e "bash -c \"node $ROOT_PATH$PATH_TO_EXEC\"";
+	gnome-terminal -e "bash -c \"node .\"";
 fi
