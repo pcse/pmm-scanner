@@ -10,7 +10,8 @@ consts.DEBUG 				= (process.argv[2] == '--debug' 	// turns debug mode on or off 
 							|| process.argv[2] == '-d'); 
 
 // used to host remote data for access with API
-consts.API_SERVER_URL 		= 'https://pmm-rubyserverapps.rhcloud.com:8443';
+// consts.API_SERVER_URL 		= 'https://pmm-rubyserverapps.rhcloud.com:8443';
+consts.API_SERVER_URL 		= 'http://fenrir.pcs.cnu.edu';
 
 if(consts.DEBUG) {
 	console.log('WARN', 'DEBUG', 'Client running in debug mode.');
