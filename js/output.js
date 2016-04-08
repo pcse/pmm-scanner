@@ -222,20 +222,16 @@ var output = {
 		stream.pipe(writeStream);
 
 		for(var i=0;i<db.size();i++) {
-			if(!db.get(i).deleted) {
-				stream.write({
-					
-					ID: db.get(i).id,
-					FIRST: db.get(i).fname,
-					LAST: db.get(i).lname,
-					MAJOR: db.get(i).major,
-					EMAIL: db.get(i).email,
-					YEAR: db.get(i).year,
-					AT_EVENT: (db.get(i).registered ? '1' : ' '),
-					IS_NEW: (db.get(i).isNew ? '1' : ' ')
-				
-				});
-			}
+			stream.write({
+				ID: db.get(i).id,
+				FIRST: db.get(i).fname,
+				LAST: db.get(i).lname,
+				MAJOR: db.get(i).major,
+				EMAIL: db.get(i).email,
+				YEAR: db.get(i).year,
+				AT_EVENT: (db.get(i).registered && !db.get(i).deleted ? '1' : ' '),
+				IS_NEW: (db.get(i).isNew && !db.get(i).deleted ? '1' : ' ')
+			});
 		}
 
 		// release file resources and safely close stream
@@ -265,22 +261,16 @@ var output = {
 																	// to be used with xlsx function to output data to spreadsheet
 
 			for(var i = 0; i < entries.length; i++) {
-
-				if(!entries[i].deleted) {
-
-					data.push({
-						'ID'			: 	entries[i].id || entries[i].student_id,									// contains student id as a string
-						'LAST'			: 	entries[i].lname || entries[i].last,									// contains student's last name
-						'FIRST'			: 	entries[i].fname || entries[i].first,									// contains student's first name
-						'YEAR' 			: 	entries[i].year,														// contains student's class (freshman .. senior)
-						'MAJOR'			: 	entries[i].major,														// contains student's area of study
-						'EMAIL'			: 	entries[i].email,														// contains student's school email
-						'AT_EVENT'		: 	((entries[i].registered || entries[i].at_event) ? '1' : ' '),			// add quotes to make sure value is treated as String, not Integer
-						'IS_NEW'		: 	((entries[i].isNew || entries[i].is_new == '1') ? '1' : ' ') 			// string containing event name (followed by current date and a comma)
-					});
-
-				}
-
+				data.push({
+					'ID'			: 	entries[i].id || entries[i].student_id,									// contains student id as a string
+					'LAST'			: 	entries[i].lname || entries[i].last,									// contains student's last name
+					'FIRST'			: 	entries[i].fname || entries[i].first,									// contains student's first name
+					'YEAR' 			: 	entries[i].year,														// contains student's class (freshman .. senior)
+					'MAJOR'			: 	entries[i].major,														// contains student's area of study
+					'EMAIL'			: 	entries[i].email,														// contains student's school email
+					'AT_EVENT'		: 	((entries[i].registered || entries[i].at_event && !entries[i].deleted) ? '1' : ' '),			// add quotes to make sure value is treated as String, not Integer
+					'IS_NEW'		: 	((entries[i].isNew || entries[i].is_new == '1') ? '1' : ' ') 			// string containing event name (followed by current date and a comma)
+				});
 			}
 
 			// write all objects in data array to created spreadsheet

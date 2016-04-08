@@ -151,7 +151,7 @@ var database = {
 				for(var x in term) {
 					if(database.entries[i][x] != term[x]) {
 						found = false;
-					}
+					}   
 				}
 				if(found) {
 					results.push(database.entries[i]);
@@ -181,7 +181,7 @@ var database = {
 
 		if(typeof entry == 'object') {
 			for(var i=0;i<database.last_reg.length;i++) {
-				if(database.last_reg[i] == entry) {
+				if(database.last_reg[i] == entry && !database.last_reg[i].deleted) {
 					response = true;
 				}
 			}
@@ -190,13 +190,13 @@ var database = {
 		return response;
 	},
 
-	// callback returns pointer to recently registered entry
+	// callback returns reference to recently registered entry
 	register:function(entry, callback) {
 
 		var existsInMysql = (callback && typeof callback == 'boolean' ? callback : false);
 
 		if(existsInMysql) {
-			console.log('REGISTER', 'DUPLICATE', 'The entry with id "', entry.id, '" already exists in the MySQL database.');
+			// console.log('REGISTER', 'DUPLICATE', 'The entry with id "', entry.id, '" already exists in the MySQL database.');
 		}
 
 		if(typeof entry == 'object') {
@@ -288,31 +288,51 @@ var database = {
 		// if entry param exists
 		if(entry) {
 			// if the entry exists in the database server, remove it from there
-			if(entry.registered && entry.addedToCurrentMysqlEventTable && !entry.deleted) {
-				// delete row from mysql table for current event
-				mysql.deleteFrom(scanner.getEventId(), 'student_id = ' + entry.id, function(err) {
-					if(err) {
-						// fail and exit function with error message
-						return callback.call(this, err);
+			if(entry.registered && !entry.deleted) {
+
+				// remove entry from attendance array
+				for(var i = 0; i < database.attendance.length; i++) {
+					if(entry.id == database.attendance[i].student_id) {
+						database.attendance.splice(i, 1);
 					}
+				}
 
-					// tell database entry no longer exists in the mysql table
-					entry.addedToCurrentMysqlEventTable = false;
+				// delete row from mysql table for current event
+				if(entry.addedToCurrentMysqlEventTable) {				
+					return mysql.deleteFrom('attendance', 'student_id="' + entry.id + '" AND event_id="' + scanner.getEventId() + '"', function(err) {
+						if(err) {
+							// fail and exit function with error message
+							return callback.call(this, err);
+						}
 
-					// tell database entry has been deleted
-					entry.deleted = true;
+						// tell database entry no longer exists in the mysql table
+						entry.addedToCurrentMysqlEventTable = false;
 
-					// remove from registered counter
-					database.statistics.registeredCount--;
+						// tell database entry has been deleted
+						entry.deleted = true;
 
-					// increase statistical deletion counter
-					database.statistics.deletedCount++;
+						// remove from registered counter
+						database.statistics.registeredCount--;
 
-					// exit function successfully
-					callback.call(this);
-				});
+						// increase statistical deletion counter
+						database.statistics.deletedCount++;
+
+						// exit function successfully
+						callback.call(this);
+					});
+				}
+
+				// assume entry has not yet been added to the mysql table
+				entry.addedToCurrentMysqlEventTable = false;
+				entry.deleted = true;
+
+				// remove from registered counter
+				database.statistics.registeredCount--;
+				database.statistics.deletedCount++;
+
+				callback.call(this);
+
 			} else {
-				// if entry was already deleted
 				if(entry.deleted) {
 					// fail and exit function with error message
 					return callback.call(this, 'The entry with id ' + entry.id + ' has already been deleted');
