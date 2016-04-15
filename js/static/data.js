@@ -124,12 +124,6 @@ window.addEventListener('load', function() {
 	// resize app to fit current window dimensions
 	App.resize(document);
 
-	// define local data stats and counters
-	var stats = {
-		total:0,
-		registered:0
-	};
-
 	var out = document.getElementById('out');				// define interface 'console' output for errors and alerts
 	var sid = document.getElementById('sid-input');			// define variable to hold main scanner input element
 	var statsOut = document.getElementById('stats1Out');
@@ -153,6 +147,42 @@ window.addEventListener('load', function() {
 	// reset circle
 	statsOutProgress.set(0);
 
+	// define local data stats and counters
+	var stats = {
+
+		_init: false,
+
+		total:0,
+		registered:0,
+		animationSettings: {
+			duration: 800
+		},
+
+		// update ui
+		refresh: function() {
+
+			if(!stats._init) {
+				stats._init = true;
+
+				// add step function so animation recognizes new color-stop params
+				stats.animationSettings.step = function(state, circle) {
+					circle.path.setAttribute('stroke', state.color);
+				}
+			}
+
+			if((stats.total / stats.average) >= 1) {
+				stats.animationSettings.from 	= { color: '#cd3700' };
+				stats.animationSettings.to 	= { color: '#cd3700' };
+			} else {
+				stats.animationSettings.from 	= { color: 'rgb(169,225,250)' };
+				stats.animationSettings.to 	= { color: 'rgb(169,225,250)' };	
+			}
+
+			statsOutProgress.animate((stats.total / stats.average), stats.animationSettings, function() {
+				sid.writeToStatsCounterOne((stats.total || ('' + stats.total)));
+			});
+		}
+	};
 
 	//focus the main input element
 	sid.focus();
@@ -236,64 +266,19 @@ window.addEventListener('load', function() {
 
 	// event fires after a user is registered with the server's database
 	events.on('register', function() {
-		// define animation's settings object
-		var animationSettings = {
-			// duration of animation
-			duration: 800
-		};
 
 		// update the counter of total people signed in
 		stats.total++;
-
-		// if we have more people than the average, or a counter overflow
-		if((stats.total / stats.average) >= 1) {
-			// modify counter animation to display different color
-			animationSettings.from 	= { color: '#cd3700' };
-			animationSettings.to 	= { color: '#cd3700' };
-
-			// add step function so animation recognizes new color-stop params
-			animationSettings.step 	= function(state, circle) {
-				// set stroke color to current 'to' or 'from' color
-				circle.path.setAttribute('stroke', state.color);
-			}
-		}
-
-		// animate and increase registrant counter
-		statsOutProgress.animate((stats.total / stats.average), animationSettings, function() {
-			// once load bar is done with animation
-			// write current number of registrants to screen
-			sid.writeToStatsCounterOne(stats.total);
-
-		});
+		stats.refresh();
 
 	});
 
 	// event fires after a response from server is received with statistical data
 	events.on('serverStatsReceived', function(data) {
-
-		var percentage;
-
-		if(data.stats.average) {
-			percentage = (data.length / data.stats.average);
-		} else {
-			percentage = data.length / 100;
-		}
-
-		// animate and increase registrant counter
-		statsOutProgress.animate(percentage, {
-
-			duration: 800
-		
-		}, function() {
-			// once load bar is done with animation
-			// write current number of registrants to screen
-			sid.writeToStatsCounterOne(data.length || '0');
-
-			// log data received from server
-			stats.total = data.length; 
-			stats.average = (data.stats.average || 100);
-			stats.averageNew = data.stats.averageNew;
-		});
+		stats.total = data.length; 
+		stats.average = (data.stats.average || 100);
+		stats.averageNew = data.stats.averageNew;
+		stats.refresh();
 	});
 
 	/**
@@ -363,75 +348,44 @@ window.addEventListener('load', function() {
 					sid.value = '';
 				} else if(sid.value.match(/^(I|())(\ )+([a-z\'\.\ ]+)(id)$/gi)) {
 					sid.write('If you know your student ID, please type that in.');
-				} else if(sid.value.match(/^(delete|remove|erase|undo)(\ )+(the|())([a-z0-9\ ]+)(people|entr(y|ies)|row(s|)|person(s|())|name(s|)|student(s|))/)) {
-					if(sid.value.match(/(last|first|latest)([\ ]+)(two|three|four|five|six|seven|eight|nine|ten)?(\ )*(new)?(\ )*(person|student|name|entry|row)/gi)) {
-						if(sid.value.match(/(latest)/gi) || sid.value.match(/(last)([\ ]+)(new)?(\ )*(person|student|name|entry|row)/gi)) {
-							//remove the last new person signed in
-							if(sid.value.match(/(new)/gi)) {
-								sid.command('/event/delete/bottom/1/new', function(err) {
-									if(err) {
-										// adverise error to client console
-										console.log('The event requested could not be removed -> ' + err);
+				} else if(sid.value.match(/^(delete|remove|erase|undo)(\ )+(the|())([a-z0-9\ ]+)(people|entr(y|ies)|id(s|)|person(s|())|name(s|)|student(s|))(.*)/)) {
+					if(sid.value.match(/(last|first|latest)([\ ]+)(two|three|four|five|six|seven|eight|nine|ten)?(\ )*(new)?(\ )*(person|student|name|entry|id)/gi)) {
 
-										// log error to gui console and exit function
-										return sid.error(err);
-									}
+						// send request to server to server to delete last added entry
+						sid.command('/student/delete/last', function(err, data) {
+							if(err) {
+								// adverise error to client console
+								console.log('The student requested could not be removed -> ' + err);
 
-									// log success to gui console
-									sid.write('The last new person signed in has been removed.');
-								});
-
-							// remove the last person to have signed in
-							} else {
-								// send request to server to server to delete last added entry
-								sid.command('/event/delete/bottom/1', function(err, data) {
-									if(err) {
-										// adverise error to client console
-										console.log('The event requested could not be removed -> ' + err);
-
-										// log error to gui console and exit function
-										return sid.error(err);
-									}
-
-									// update server stats locally
-									events.emit('serverStatsReceived', JSON.parse(data).data);
-
-									// log success to gui console
-									sid.write('The last person signed in has been removed.');
-								});
+								// log error to gui console and exit function
+								return sid.error(err);
 							}
-						} else if(sid.value.match(/(first (person|student|name|entry|row))/gi)) {
-							//remove the first student signed in
-							if(sid.value.match(/(new)/gi)) {
-								sid.command('/event/delete/top/1/new',function(err) {
-									if(err) {
-										return sid.error('The event requested could not be removed: '+err);
-									}
 
-									sid.write('The first new person signed in has been removed.');
-								});
-							} else {
-								//'event/delete/(top|bottom|id)/(amount|amount|id)/flag
-								sid.command('/event/delete/top/1',function(err) {
-									if(err) {
-										return sid.error('The event requested could not be removed: '+err);
-									}
+							stats.total--;
+							stats.refresh();
 
-									sid.write('The first person signed in has been removed.');
-								});
+							// log success to gui console
+							sid.write('The last person signed in has been removed.');
+						});
+						
+					} else if(sid.temp = sid.value.match(/((00|000)[0-9]{5,6})/gi)) {
+
+						sid.command('/student/delete/' + sid.temp, function(err, data) {
+							if(err) {
+								// adverise error to client console
+								console.log('The event requested could not be removed -> ' + err);
+
+								// log error to gui console and exit function
+								return sid.error(err);
 							}
-						} else if(sid.value.match(/(people|persons|names|students|rows)/gi)) {
-							//remove x amount of people
-							sid.error('I can\'t do that yet.');
-						} else {
-							sid.error();
-						}
-					} else if(sid.temp = sid.value.match(/(last|first|latest)(\ )+([0-9]+)(\ )+(new)?(\ )*(people|students|names|rows|entries)/gi)) {
-						if(sid.value.match(/(new)/gi)) {
-							sid.write('The last '+sid.temp[0].split(' ')[1]+' new people have been deleted.');
-						} else {
-							sid.write('The last '+sid.temp[0].split(' ')[1]+' people have been deleted.');
-						}
+
+							stats.total--;
+							stats.refresh();
+
+							// log success to gui console
+							sid.write('The student with id of "' + sid.temp + '" has been removed.');
+						});
+
 					} else {
 						sid.error();
 					}

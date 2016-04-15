@@ -80,9 +80,13 @@ var server = {
 				response.alreadyRegistered = true;
 			} else {
 				entry.visits++;
-
-				// register entry with the local database object indicating student has signed in to the event
 				db.register(name[0]);
+			}
+
+			if(entry.deleted) {
+				db.statistics.registeredCount++;
+				response.alreadyRegistered = false;
+				entry.deleted = false;
 			}
 
 			response.fname = name[0].fname;
@@ -187,8 +191,46 @@ var server = {
 
 		} else if(command[1] == 'query') {
 			res.end('I am not allowed to index the database yet.');
-		} else if(command[1] == 'create') {
-			res.end('ERR: Unimplemented command.');
+		} else if(command[1] == 'student') {
+
+			// handle student deletion by id
+			if(!command[2]) {
+				console.log('ERROR', 'SERVER', 'COMMAND', 'Insuficient command parameters, command segment at index 2 not found.');
+				return res.end('Invalid student command, unspecified sub-action (delete, add)');
+			}
+
+			if(!command[3]) {
+				console.log('ERROR', 'SERVER', 'COMMAND', 'Insuficient command parameters, command segment at index 3 not found.');
+				return res.end('Invalid student command, unspecified student identifier');
+			}
+
+			// handle deletion of attendance records
+			// assume command[3] is defined
+			if(command[2] == 'delete') {
+				
+				var subrout = decodeURIComponent(command[3]);
+
+				// handle record removal by student id
+				if(subrout.match(/^(00|000)[0-9]{5,6}/gi)) {
+					return server.handle_command_del_student(scanner, api, mysql, db, res, subrout);
+				}
+
+				if(subrout == 'last') {
+ 					var student_id = db.getRegistered()[db.getRegistered().length - 1];
+ 					if(student_id) {
+						return server.handle_command_del_student(scanner, api, mysql, db, res, student_id.id);
+					}
+				}
+
+				console.log('ERROR', 'SERVER', 'COMMAND', 'Student subroutine identifier', command[3], 'is undefined.');
+				return res.end('Invalid student identifier, supported identifiers include a student id, or a keyword such as "last"');
+			}
+
+			// assume requested sub-routine is undefined if
+			// we made it this far
+			console.log('ERROR', 'SERVER', 'COMMAND', 'Subroutine', command[2], 'is undefined.');
+			res.end('Invalid student command sub-routine ' + command[2]);
+
 		} else if(command[1] == 'event') {
 
 			if(command[2] == 'name') {
@@ -201,9 +243,10 @@ var server = {
 				res.end('success');
 
 			} else if(command[2] == 'delete') {
-				// handles deletion of records				
-				if(command[3] == 'top') {
 
+				// remove student at top, or first index of the
+				// registered student array
+				if(command[3] == 'top') {
 					db.remove(scanner, mysql, db.getRegistered()[0]);
 					res.end('success');
 
@@ -276,6 +319,46 @@ var server = {
 		} else {
 			res.end('ERR: Invalid command [' + command[1] + ']');
 		}
+	},
+
+	/**
+	 * Handle deletion of student attendance records by student id
+	 */
+	handle_command_del_student: function(scanner, api, mysql, db, res, student_id) {
+
+		var entry = db.find({
+			id: student_id
+		});
+
+		if(!entry.length) {
+			console.log('ERROR', 'SERVER', 'COMMAND', 'Student id', student_id, 'was not found while attempting to unregister such entry.');
+			return res.end('Invalid student command, invalid student id (' + student_id + ')');			
+		}
+
+		// tell database to remove specified record
+		db.remove(scanner, mysql, entry[0], function(err) {
+
+			if(err) {
+				console.log('ERROR', 'SERVER', 'COMMAND', 'DEL_STUDENT', err.toString());
+				return res.end(err.toString());
+			}
+
+			if(!entry[0].deleted) {
+				console.log('ERROR', 'SERVER', 'COMMAND', 'DEL_STUDENT', 'Record integrity check FAILED. Entry', student_id, 'was queued for removal but was not successfully marked as "deleted".');
+				return res.end('Record integrity check FAILED. Entry ' + student_id + ' was queued for removal but was not successfully marked as "deleted".');
+			}
+
+			// assume deletion success
+			console.log('SERVER', 'COMMAND', 'DEL_STUDENT', 'Successfully deleted entry with id "', student_id, '" from the database');
+			return res.end('success');
+
+		});
+
+		// tell api to remove specified record
+		api.send('cmd_del_student', {
+			studentId: student_id
+		});
+
 	},
 
 	handle_req: function(req, res) {
