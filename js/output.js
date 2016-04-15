@@ -4,7 +4,7 @@
 
 var fs 		= require('fs');
 var csv 	= require('fast-csv');
-var xlsx 	= require('xlsx-writer');
+// var xlsx 	= require('xlsx-writer');
 var consts 	= require('./constants.js');
 
 var output = {
@@ -245,6 +245,8 @@ var output = {
 
 	/**
 	 * Stores an array of objects into a spreadsheet
+	 * WARNING: xlsx module not working on mac, check that
+	 * this module works before using this method
 	 */
 	generateSpreadsheetFromData: function(scanner, entries, callback) {
 
@@ -283,22 +285,28 @@ var output = {
 
 			}
 
+			/**
+			 * TO RE-ENABLE THIS MODULE, UNCOMMENT ALL OF THE CODE BELOW
+			 * NOTHING ELSE NEEDS TO BE DONE.
+			 */
 			// write all objects in data array to created spreadsheet
-	        return xlsx.write(fname, data, function(err) {
-				if(err) {
-					// log error
-					console.log(err);
+	   //      return xlsx.write(fname, data, function(err) {
+				// if(err) {
+				// 	// log error
+				// 	console.log(err);
 
-					// call callback function with error
-					return callback.call(this, err);
-				}
+				// 	// call callback function with error
+				// 	return callback.call(this, err);
+				// }
 
-				console.log('EXPORT', 'EXCEL', 'The excel document (' + fname + ') has been updated!');
+				// console.log('EXPORT', 'EXCEL', 'The excel document (' + fname + ') has been updated!');
+				console.log('EXPORT', 'EXCEL', 'WARNING: Excel module disabled, check xlsx package!');
 
 				if(callback && typeof callback == 'function') {
 					callback.call(this);
 				}
-			});
+
+			// });
 	}
 };
 

@@ -245,9 +245,7 @@ var _scanner = {
 		// save to individual file for current day - prevents destructive output
 		fname = consts.EXCEL_RESULTS_DIR + scanner.getEventId() + '_' + consts.EXCEL_OUTPUT_FILE;
 
-		if(type == 'excel' || !type) {
-			return output.generateSpreadsheetFromData(scanner, db.entries, callback);
-		} else if(type == 'csv') {
+		if(type == 'excel' || !type || type == 'csv') {
 			return output.generateCSVFromData(scanner, db, callback);
 		} else if(type == 'mysql') {
 			return output.generateMysqlSync(scanner, mysql, db, callback);
