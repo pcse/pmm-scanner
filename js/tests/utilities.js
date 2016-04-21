@@ -38,7 +38,7 @@ mysql.connect(function(err) {
 
 	console.log('Successfully connected to local database');
 
-	initDetectDiffsBetweenSpreadsheets('/Users/juanvallejo/Desktop/bigger.csv', '/Users/juanvallejo/Desktop/smaller.csv', 1, 1);
+	// initDetectDiffsBetweenSpreadsheets('/Users/juanvallejo/Desktop/bigger.csv', '/Users/juanvallejo/Desktop/smaller.csv', 1, 1);
 	// uniqueImportStudentsFromSpreadsheet('/Users/juanvallejo/Desktop/majors2016.xlsx', 'students');
 
 	// initPopulateAttendanceTableFromEventTables('attendance');
@@ -49,7 +49,7 @@ mysql.connect(function(err) {
 	// initDetectDuplicatesOnTable('9_10_2015');
 
 	// check for duplicates accross all events
-	initDetectDuplicatesOnAttendance('2_4_2016');
+	initDetectDuplicatesOnAttendance('4_14_2016');
 	// initDetectDuplicatesOnAttendance('11_5_2015');
 	// initDetectDuplicatesOnAttendance('10_29_2015');
 	// initDetectDuplicatesOnAttendance('10_22_2015');
@@ -170,7 +170,7 @@ function initDetectDiffsBetweenSpreadsheets(longListFile, masterFile, index1, in
  * Assumes file being read is of type excel spreadsheet
  * Retrieves unique values from a spreadsheet file and 
  * stores them in the specified table
- * /
+ **/
 function uniqueImportStudentsFromSpreadsheet(fileName, tableName) {
 
 	var databaseReady = false;
@@ -401,7 +401,7 @@ function initDetectDuplicatesOnTable(table) {
  * `students_2014_2015`. Populates `students_2014_2015` with data
  * that is found on `students` but not on `students_2014_2015`
  *
- * TLDR: Populates the chosen MASTER students table with the contents it doesn't have
+ * TL;DR: Populates the chosen MASTER students table with the contents it doesn't have
  * from the other students tables 
  */
 function initPopulateMasterStudenRecordsWithDiff() {

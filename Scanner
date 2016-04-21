@@ -19,8 +19,8 @@ cd 'js';
 if [[ $PLATFORM == 'Darwin' ]]
 then
 	sh -c "bash -c \"open -a 'Google Chrome' 'http://localhost:8000'\"";
-	sh -c "bash -c \"node .\""
+	sh -c "bash -c \"node . $@ \""
 else
 	gnome-terminal -e "bash -c \"google-chrome http://localhost:8000\"";
-	gnome-terminal -e "bash -c \"node .\"";
+	gnome-terminal -e "bash -c \"node . $@ \"";
 fi
