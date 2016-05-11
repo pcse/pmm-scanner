@@ -9,11 +9,8 @@ Scanner application written in Node.js for PCSE events at CNU.
 - Requires Node.js package xlsx-writer  
 - Requires Node.js package fast-csv
 
-Type the commands below on a unix terminal:
-
-```
-cd js && npm install
-```
+## Warning:
+**All `npm` package dependencies are included in this repo under `js/node_modules`. THESE ARE KNOWN TO WORK, DO NOT RUN `npm install` OR IT WILL OVERWRITE THESE.**
 
 ## Running
 
