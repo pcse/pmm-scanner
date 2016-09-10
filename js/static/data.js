@@ -402,6 +402,17 @@ window.addEventListener('load', function() {
 					} else {
 						sid.error();
 					}
+
+				} else if(sid.value == 'fast reg on'){
+					sid.fast_reg = true;
+					sid.value = '';
+					sid.write('Fast Registration Mode is ON');
+
+				} else if(sid.value == 'fast reg off'){
+					sid.fast_reg = false;
+					sid.value = '';
+					sid.write('Fast Registration Mode is OFF');
+
 				} else {
 					var xhr = new XMLHttpRequest();
 					xhr.open('GET','http://navigator-fixed.rhcloud.com/apis/askcom/http://www.ask.com/web?q='+encodeURIComponent(sid.value.split('?')[0])+'&qsrc=0&o=0&l=dir',true);
@@ -603,9 +614,9 @@ window.addEventListener('load', function() {
 										events.emit('register', [stats.total]);
 									}
 								} else {
-									var FAST_REG = true;
+									
 									// if the Fast Registration flag is set
-									if(FAST_REG) {
+									if(sid.fast_reg) {
 										
 
 										// set all sid fields but id to "new_student" (manually correct these in database later)
