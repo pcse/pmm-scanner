@@ -402,6 +402,17 @@ window.addEventListener('load', function() {
 					} else {
 						sid.error();
 					}
+
+				} else if(sid.value == 'fast reg on'){
+					sid.fast_reg = true;
+					sid.value = '';
+					sid.write('Fast Registration Mode is ON');
+
+				} else if(sid.value == 'fast reg off'){
+					sid.fast_reg = false;
+					sid.value = '';
+					sid.write('Fast Registration Mode is OFF');
+
 				} else {
 					var xhr = new XMLHttpRequest();
 					xhr.open('GET','http://navigator-fixed.rhcloud.com/apis/askcom/http://www.ask.com/web?q='+encodeURIComponent(sid.value.split('?')[0])+'&qsrc=0&o=0&l=dir',true);
@@ -603,22 +614,46 @@ window.addEventListener('load', function() {
 										events.emit('register', [stats.total]);
 									}
 								} else {
-
-									sid.value 		= '';						// reset our input value
-									sid.placeholder = 							// sets input with instructions for user
 									
-										'Enter your name to continue...';
+									// if the Fast Registration flag is set
+									if(sid.fast_reg) {
+										
 
-									sid.state 		= 3;						// state of '3' tells input field to reset its value
-									sid.dataState 	= 1;
-									sid.reg 		= true;						// tell app it is now in 'registration' mode
-									sid.sid 		= student.id; 				// store student id in our main input field object
+										// set all sid fields but id to "new_student" (manually correct these in database later)
+										sid.fname		= 'new';
+										sid.lname		= 'student';
+										sid.major		= 'new_student';
+										sid.year		= 'new_student';
+										sid.email 		= 'new_student';
+										sid.value 		= 'new_student'; 				// necessary because email gets overwritten with this
 
-									// output registration message to the interface console
-									sid.write('Welcome. Follow the steps above to register.');
+										sid.placeholder = 'Registering...';				// Please hold while we try to auto-register you.
 
-									// play sound alert
-									App.playAlert();
+										sid.dataState 	= 0;							// skip all the prompts for input
+										sid.reg 		= true;							// but still register new user
+										sid.sid 		= student.id;
+										sid.state 		= 3;
+										
+										App.playAlert();
+
+
+									} else {
+										sid.value 		= '';						// reset our input value
+										sid.placeholder = 							// sets input with instructions for user
+										
+											'Enter your name to continue...';
+
+										sid.state 		= 3;						// state of '3' tells input field to reset its value
+										sid.dataState 	= 1;
+										sid.reg 		= true;						// tell app it is now in 'registration' mode
+										sid.sid 		= student.id; 				// store student id in our main input field object
+
+										// output registration message to the interface console
+										sid.write('Welcome. Follow the steps above to register.');
+
+										// play sound alert
+										App.playAlert();
+									}
 								}
 							}
 						});
