@@ -86,7 +86,7 @@ var _scanner = {
 	syncAttendanceTableWithAPIServer: function(mysql, api, callback) {
 
 		// get dataset containing hash of latest attendance result
-		mysql.connect().query('SELECT MD5(concat(student_id, event_id, is_new, COUNT(*))) AS md5, COUNT(*) AS total FROM `attendance` ORDER BY student_id DESC', function(err, rows) {
+		mysql.query('SELECT MD5(concat(student_id, event_id, is_new, COUNT(*))) AS md5, COUNT(*) AS total FROM `attendance` ORDER BY student_id DESC', function(err, rows) {
 
 			if(err) {
 				return console.log('API', 'SYNC', 'ERR', err);

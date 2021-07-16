@@ -1,21 +1,17 @@
 /**
  * define mysql connection object
+ * @implements sqldatabase interface
 **/
 
 var consts = require('./constants.js');
 var date = require('./date.js');
+var sqldatabase = require('./prototypes/sqldatabase.js');
 
 var mysql = {
-
-	// define mysql object properties
-	connection 			: 	null,				// holds the connection object to the mysql server or null if not connected
-	eventEntryCreated	: 	false,				// flag indicating whether a mysql entry has been added (`events`) for current event
-	hasData				:	false,				// flag indicating whether mysql database table contains any data
-	isBusy 				: 	false, 				// flag indicating whether a mysql query is currently ongoing
-	isConnected			: 	false,				// flag indicating whether a connection to mysql server has been established
 	library				: 	require('mysql'),	// define and import node.js package
 
 	/**
+	 * @private method
 	 * creates and establishes a connection to
 	 * the mysql server
 	 *
@@ -24,7 +20,7 @@ var mysql = {
 	 * @param password	= {String} specifying database account password
 	 * @param database 	= {String} specifying the name of database to connect to
 	**/
-	connect : function(host, user, password, database) {
+	_connect : function(host, user, password, database) {
 		// check to see if previous connection exists, or @params for new connection are passed
 		if(!mysql.isConnected || (host && user && password)) {
 			// create connection blueprint
@@ -60,6 +56,16 @@ var mysql = {
 	},
 
 	/**
+	 * performs a query using the underlying database connection
+	 *
+	 * @param sqlQuery 	= {String} 		specifying SQL query to execute
+	 * @param callback 	= {Function} 	to call after operation has completed successfully
+	**/
+	query : function(sqlQuery, callback) {
+		mysql._connect().query(sqlQuery, callback);
+	},
+
+	/**
 	 * deletes entries from table where whereLogic applies
 	 *
 	 * @param mysqlTableName  	= {Object}		entry object from local 'database' object
@@ -71,8 +77,7 @@ var mysql = {
 	deleteFrom : function(mysqlTableName, whereLogic, callback) {
 		if(whereLogic) {
 			// perform query only if whereLogic has been passed
-			mysql.connect()
-				.query('DELETE FROM ' + mysqlTableName + ' WHERE ' + (whereLogic || '1 = 1'), callback);
+			mysql.query('DELETE FROM ' + mysqlTableName + ' WHERE ' + (whereLogic || '1 = 1'), callback);
 		} else {
 			// fail and exit function with error
 			callback.call(this, 'ERR: (mysqldatabasedeletionerror): no \'WHERE\' condition applies for selected logic.');
@@ -107,8 +112,7 @@ var mysql = {
 		});
 
 		// join arrays of column names and values to add by commas and add them to our query string
-		mysql.connect()
-			.query('INSERT INTO ' + mysqlTableName + '(' + (databaseColumns.join(',')) + ') VALUES (' + valuesToAdd.join(',') + ')', 
+		mysql.query('INSERT INTO ' + mysqlTableName + '(' + (databaseColumns.join(',')) + ') VALUES (' + valuesToAdd.join(',') + ')', 
 				// call user's callback function
 				function(err) {
 					// get err param if any and pass it to callback before calling
@@ -128,8 +132,7 @@ var mysql = {
 	**/
 	selectFrom : function(mysqlTableName, databaseColumns, whereLogic, callback) {
 		// perform query
-		mysql.connect()
-			.query('SELECT ' + databaseColumns.join(',') + ' FROM ' + mysqlTableName + ' WHERE ' + (whereLogic || '1 = 1'), callback);
+		mysql.query('SELECT ' + databaseColumns.join(',') + ' FROM ' + mysqlTableName + ' WHERE ' + (whereLogic || '1 = 1'), callback);
 	},
 
 	/**
@@ -155,15 +158,16 @@ var mysql = {
 		keyValuePairs = keyValuePairs.substring(1);
 
 		// join arrays of column names and values to add by commas and add them to our query string
-		mysql.connect()
-			.query('UPDATE ' + mysqlTableName + ' SET ' + keyValuePairs + ' WHERE ' + (whereLogic || '1 = 1'), 
-				// call user's callback function
-				function(err) {
-					// get err param if any and pass it to callback before calling and exit
-					return callback.call(mysql, err);
-				});
+		mysql.query('UPDATE ' + mysqlTableName + ' SET ' + keyValuePairs + ' WHERE ' + (whereLogic || '1 = 1'), 
+			// call user's callback function
+			function(err) {
+				// get err param if any and pass it to callback before calling and exit
+				return callback.call(mysql, err);
+			}
+		);
 	}
 
 };
 
+mysql.__proto__ = sqldatabase;
 module.exports = mysql;

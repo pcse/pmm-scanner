@@ -30,7 +30,7 @@ if(!USE_CLOUD_DB) {
 
 }
 
-mysql.connect(function(err) {
+mysql._connect(function(err) {
 
 	if(err) {
 		return console.log('MYSQL', 'ERR', err);

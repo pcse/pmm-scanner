@@ -173,7 +173,7 @@ var api = {
 	handle_attendance_req: function(mysql, api, data) {
 
 		console.log('API', 'SYNC', 'ATTENDANCE', 'Attendance data requested by API server. Sending...');
-		mysql.connect().query('SELECT * FROM `attendance`', function(err, rows) {
+		mysql.query('SELECT * FROM `attendance`', function(err, rows) {
 
 			if(err) {
 				return console.log('MYSQL', 'SYNC', 'ATTENDANCE', 'ERR', err);
