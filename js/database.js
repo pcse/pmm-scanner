@@ -5,6 +5,11 @@
 
 var consts = require('./constants.js');
 var date = require('./date.js');
+var sqldatabase = require('./prototypes/sqldatabase.js');
+
+const SqlServerExportStrategyName = 'mysql';
+const ExcelExportStrategyName = 'excel';
+
 
 var database = {
 	
@@ -362,10 +367,7 @@ var database = {
 		console.log('MYSQL', 'Initializing event data...');
 
 		// create mysql entry for current event if it doesn't exist
-		mysql.connect()
-			
-			// insert new entry into `events` table
-			.query('INSERT IGNORE INTO `events` (table_name, event_name, semester, year) VALUES ("' + scanner.getEventId() + '", "' + scanner.getEventName() + '", "' + date.get_semester() + '", "' + date.get_year() + '")', function(err) {
+		mysql.query('INSERT IGNORE INTO `events` (table_name, event_name, semester, year) VALUES ("' + scanner.getEventId() + '", "' + scanner.getEventName() + '", "' + date.get_semester() + '", "' + date.get_year() + '")', function(err) {
 				
 				// tell program request has been parsed
 				mysql.isBusy = false;
@@ -380,8 +382,7 @@ var database = {
 
 				// index event's table and see which entries from database exist on it (done in case application is restarted more than once in the same event)
 				// update local database's entries with data from mysql table's entries
-				mysql.connect()
-					.query('SELECT * FROM `attendance` WHERE event_id="' + scanner.getEventId() + '"', function(err, evtRows, evtCols) {
+				mysql.query('SELECT * FROM `attendance` WHERE event_id="' + scanner.getEventId() + '"', function(err, evtRows, evtCols) {
 
 						if(err) {
 							return console.log('MYSQL', 'QUERY', 'An error occurred attempting to check previously stored data in mysql event table -> ' + err);
@@ -463,15 +464,19 @@ var database = {
 			});
 	},
 
-	init: function(scanner, mysql, api, output) {
+	init: function(scanner, sqlServer, api, output) {
+		// quick sanity check to make sure our sqlDatabase object has "sqldatabase" as its prototype
+		if(!sqlServer.isPrototypeOf(sqldatabase)) {
+			throw "provided sqlServer does not implement sqldatabase " + sqlServer.getPrototypeOf();
+		}
 
-		// before we try to populate internal database object, check to see if mysql server has any data in it
-		mysql.connect().query('SELECT * FROM `students` ORDER BY last ASC', function(err, rows, fields) {
+		// before we try to populate internal database object, check to see if SQL server has any data in it
+		sqlServer.query('SELECT * FROM `students` ORDER BY last ASC', function(err, rows, fields) {
 
 			if(err) {
 
-				// if error, assume mysql server is not available, don't use mysql server at all. Fall back to spreadsheet implementation and advertise this to console
-				console.log('WARN', 'MYSQL', 'Using spreadsheet file to populate database instead. (' + err + ')');
+				// if error, assume SQL server is not available, don't use SQL server at all. Fall back to spreadsheet implementation and advertise this to console
+				console.log('WARN', 'SQL', 'Using spreadsheet file to populate database instead. (' + err + ')');
 
 				// populate database from spreadsheet and exit
 				return scanner.populateDatabaseFromSpreadsheet(scanner, database, function(err) {
@@ -479,10 +484,10 @@ var database = {
 					if(err) {
 						// if fallback spreadsheet implementation errors, advertise error message and exit.
 						return console.log(	'[Fatal]: There was an error populating the database using spreadsheet' +
-											'file as backup, and the mysql database as a primary means -> ' + err);
+											'file as backup, and the SQL database as a primary means -> ' + err);
 					}
 
-					database.emit('ready', ['excel']);
+					database.emit('ready', [ExcelExportStrategyName]);
 
 				});
 			}
@@ -490,15 +495,15 @@ var database = {
 			// if no error fetching data, check to see if any data in database. don't take into account if table has been created or not
 			if(rows.length) {
 
-				// if mysql table contains data, tell program
-				mysql.hasData = true;
+				// if SQL table contains data, tell program
+				sqlServer.hasData = true;
 
 				// then, begin adding such data to internal database object
 				scanner.populateDatabaseFromMysql(scanner, database, rows, function(err) {				
 
-					if(!mysql.eventEntryCreated) {
-						database.initializeEventEntry(scanner, mysql, api, function() {
-							database.emit('ready', ['mysql']);
+					if(!sqlServer.eventEntryCreated) {
+						database.initializeEventEntry(scanner, sqlServer, api, function() {
+							database.emit('ready', [SqlServerExportStrategyName]);
 						});
 					}
 
@@ -506,27 +511,27 @@ var database = {
 
 			} else {
 
-				// mysql database is empty. advertise that we are loading data from spreadsheet to populate mysql table
-				console.log('EXCEL', 'No data found on mysql server. Using spreadsheet to populate internal database.');
+				// SQL database is empty. advertise that we are loading data from spreadsheet to populate SQL table
+				console.log('EXCEL', 'No data found on SQL server. Using spreadsheet to populate internal database.');
 
 				// if no data in database, use spreadsheet data to populate our local database object, and then
-				// use the newly populated local 'database' object to populate mysql server database
+				// use the newly populated local 'database' object to populate SQL server database
 				scanner.populateDatabaseFromSpreadsheet(scanner, database, function(err) {
 
 					if(err) {
 						return console.log('[Fatal]: Error populating local database object from spreadsheet -> ' + err);
 					}
 
-					// once internal database object has data in it, export data to mysql server if empty
-					scanner.exportDatabase(scanner, database, mysql, api, output, 'mysql', consts.EXCEL_AUTOSAVE_FILE, function(err) {
+					// once internal database object has data in it, export data to SQL server if empty
+					scanner.exportDatabase(scanner, database, sqlServer, api, output, SqlServerExportStrategyName, consts.EXCEL_AUTOSAVE_FILE, function(err) {
 
 						if(err) {
-							console.log('An error occurred populating empty mysql database -> ' + err);
-							return database.emit('ready', ['excel']);
+							console.log('An error occurred populating empty SQL database -> ' + err);
+							return database.emit('ready', [ExcelExportStrategyName]);
 						}
 
-						// begin auto-saving new data to mysql database
-						database.emit('ready', ['mysql']);
+						// begin auto-saving new data to SQL database
+						database.emit('ready', [SqlServerExportStrategyName]);
 					});
 				});
 

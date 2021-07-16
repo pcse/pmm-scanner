@@ -128,7 +128,7 @@ var output = {
 				}
 
 				// add to `attendance` table
-				mysql.connect().query(
+				mysql.query(
 
 					"INSERT INTO `attendance` (`student_id`, `event_id`, `is_new`)" +
 					"VALUES" +
@@ -175,7 +175,7 @@ var output = {
 				entry.addedToCurrentMysqlEventTable = true;
 
 				// add to `attendance` table
-				mysql.connect().query(
+				mysql.query(
 
 					"INSERT INTO `attendance` (`student_id`, `event_id`, `is_new`)" +
 					"VALUES" +
